@@ -1,0 +1,6 @@
+name: ModifyNick
+version: ${version}
+main: kr.apo2073.modifyNick.ModifyNick
+api-version: '1.20'
+prefix: Nicks
+authors: [ 아포칼립스 ]
