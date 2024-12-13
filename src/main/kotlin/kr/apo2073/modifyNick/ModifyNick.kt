@@ -3,9 +3,9 @@ package kr.apo2073.modifyNick
 import org.bukkit.plugin.java.JavaPlugin
 
 class ModifyNick : JavaPlugin() {
-
+    companion object {lateinit var instance:ModifyNick}
     override fun onEnable() {
-        // Plugin startup logic
+        instance=this
     }
 
     override fun onDisable() {
