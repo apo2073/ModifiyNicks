@@ -1,0 +1,8 @@
+cost:
+  # type: [custom/pattern]
+  type: custom
+  # {count} >> 닉네임 변경 횟수
+  pattern: "*{count}"
+  1: 0.0
+  2: 100.0
+  3: 200.0
