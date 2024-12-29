@@ -1,13 +1,14 @@
 package kr.apo2073.modifyNick.utilities
 
 import kr.apo2073.lib.Items.ItemBuilder
-import kr.apo2073.modifyNick.ModifyNick
+import kr.apo2073.modifyNick.Nick
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import net.wesjd.anvilgui.AnvilGUI
 import net.wesjd.anvilgui.AnvilGUI.ResponseAction
 import org.bukkit.Material
 import org.bukkit.configuration.file.YamlConfiguration
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer
 import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 import java.io.File
@@ -17,7 +18,7 @@ import java.lang.reflect.Method
 class NickManager: Listener {
     private var craftPlayerClass: Class<*>? = null
     private val version: String =
-        ModifyNick.instance.server.javaClass.getName().replace(".", ",").split(",".toRegex())
+        Nick.instance.server.javaClass.getName().replace(".", ",").split(",".toRegex())
             .dropLastWhile { it.isEmpty() }
             .toTypedArray()[3]
 
@@ -25,15 +26,8 @@ class NickManager: Listener {
         craftPlayerClass = Class.forName("org.bukkit.craftbukkit.$version.entity.CraftPlayer")
     }
 
-    private fun config():YamlConfiguration {
-        val file=file()
-        val config=YamlConfiguration.loadConfiguration(file)
-        return config
-    }
-    private fun file():File {
-        val file=File("${ModifyNick.instance.dataFolder}", "info.yml")
-        return file
-    }
+    private val file=File("${Nick.instance.dataFolder}", "info.yml")
+    private val config=YamlConfiguration.loadConfiguration(file)
 
     fun openUI(player: Player) {
         AnvilGUI.Builder().itemLeft(ItemBuilder(Material.NAME_TAG).setDisplayName("새 이름을 입력 하세요").build())
@@ -42,6 +36,16 @@ class NickManager: Listener {
                     if (slot != 2) {
                         return@onClick emptyList<ResponseAction>()
                     } else {
+                        val cost=Nick.instance.config.getDouble("cost.${config
+                            .getInt("${player.uniqueId}.count") + 1}")
+
+                        if (!Nick.econ.has(player, cost)) {
+                            return@onClick arrayListOf(ResponseAction
+                                .replaceInputText("충분한 돈을 소유하지 않았습니다 ( 추가 필요 금액: ${
+                                    if ((cost-Nick.econ.getBalance(player))<=0) {0.0}
+                                    else {cost-Nick.econ.getBalance(player)}
+                                } )"))
+                        }
                         val item = stateSnapshot.outputItem
                         val nick = PlainTextComponentSerializer.plainText().serialize(item.displayName())
                             .removePrefix("[").removeSuffix("]")
@@ -53,9 +57,12 @@ class NickManager: Listener {
                         setNick(player, nick)
                         showAll(player)
                         player.sendMessage("§l[ §a§l::§f§l ] §f§l닉네임 변경됨 : $nick")
+                        Nick.econ.withdrawPlayer(player, cost)
 
-                        config().set("${player.uniqueId}.count", config().getInt("${player.uniqueId}.count", 0) + 1)
-                        config().set("${player.uniqueId}.nick", nick)
+                        config.set("${player.uniqueId}.count",
+                            config.getInt("${player.uniqueId}.count", 0) + 1)
+                        config.set("${player.uniqueId}.nick", nick)
+                        config.save(file)
 
                         return@onClick arrayListOf(ResponseAction.close())
                     }
@@ -63,13 +70,8 @@ class NickManager: Listener {
                     e.printStackTrace()
                     return@onClick arrayListOf(ResponseAction.replaceInputText(e.message))
                 }
-            }.text("새로운 닉네임 입력 ( ${config().getInt("${player.uniqueId}.count", 0) + 1}회 )")
-            .title("닉네임 변경").plugin(ModifyNick.instance).open(player)
-        try {
-            config().save(file())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+            }.title("새로운 닉네임 입력 ( ${config.getInt("${player.uniqueId}.count", 0) + 1}회 )")
+            .text("닉네임 변경").plugin(Nick.instance).open(player)
     }
 
     fun setNick(player: Player, nickname: String) {
@@ -85,10 +87,15 @@ class NickManager: Listener {
             player.displayName(Component.text(nickname))
             player.customName(Component.text(nickname))
             player.isCustomNameVisible=true
+            (player as CraftPlayer).setDisplayName(nickname)
+            (player).playerListName(Component.text(nickname))
+            player.displayName(Component.text(nickname))
+            player.customName(Component.text(nickname))
+            player.isCustomNameVisible=true
 
-            player.hidePlayer(ModifyNick.instance, player)
-            ModifyNick.instance.server.scheduler.runTaskLater(ModifyNick.instance, Runnable {
-                player.showPlayer(ModifyNick.instance, player)
+            player.hidePlayer(Nick.instance, player)
+            Nick.instance.server.scheduler.runTaskLater(Nick.instance, Runnable {
+                player.showPlayer(Nick.instance, player)
             }, 2L)
 
         } catch (e: InvocationTargetException) {
@@ -104,16 +111,14 @@ class NickManager: Listener {
 
 
     private fun hideAll(player: Player) {
-        for (loopPlayer in ModifyNick.instance.server.onlinePlayers) {
-            loopPlayer.hidePlayer(ModifyNick.instance, player)
+        for (loopPlayer in Nick.instance.server.onlinePlayers) {
+            loopPlayer.hidePlayer(Nick.instance, player)
         }
     }
 
     private fun showAll(player: Player) {
-        for (loopPlayer in ModifyNick.instance.server.onlinePlayers) {
-            loopPlayer.showPlayer(ModifyNick.instance, player)
+        for (loopPlayer in Nick.instance.server.onlinePlayers) {
+            loopPlayer.showPlayer(Nick.instance, player)
         }
     }
 }
-
-//((CraftPlayer)p).getHandle().playerConnection.sendPacket(new PacketPlayOutOpenWindow(1, Containers.ANVIL, new ChatComponentText("IT WORKS!")));

@@ -46,17 +46,16 @@ tasks.build {
     dependsOn("shadowJar")
 }
 
-//tasks.shadowJar {
-//    archiveFileName.set("ChangeNick.jar")
-//    destinationDirectory=file("C:\\Users\\PC\\Desktop\\Test_Server\\20.4\\plugins")
-//    archiveClassifier.set("all")
-//    mergeServiceFiles()
+tasks.shadowJar {
+    archiveFileName.set("Nick.jar")
+    destinationDirectory=file("C:\\Users\\PC\\Desktop\\Test_Server\\20.4\\plugins")
+    archiveClassifier.set("all")
+    mergeServiceFiles()
 //    relocate("net.wesjd.anvilgui", "kr.apo2073.modifyNick.anvilgui")
-//    minimize()
-//    dependencies {
-//        include(dependency("net.wesjd:anvilgui:1.10.3-SNAPSHOT"))
-//    }
-//}
+    dependencies {
+        include(dependency("net.wesjd:anvilgui:1.10.3-SNAPSHOT"))
+    }
+}
 
 tasks.processResources {
     val props = mapOf("version" to version)

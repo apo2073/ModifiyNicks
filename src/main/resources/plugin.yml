@@ -1,6 +1,6 @@
-name: ModifyNick
+name: Nick
 version: ${version}
-main: kr.apo2073.modifyNick.ModifyNick
+main: kr.apo2073.modifyNick.Nick
 api-version: '1.20'
 prefix: Nicks
 authors: [ 아포칼립스 ]
